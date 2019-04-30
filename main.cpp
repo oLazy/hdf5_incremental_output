@@ -31,6 +31,12 @@ int main() {
         dimsf[1] = NY;
 
         DataSpace dataSpace{RANK,dimsf};
+        IntType datatype{PredType::NATIVE_INT};
+        datatype.setOrder(H5T_ORDER_LE);
+
+        DataSet dataSet = thisFile.createDataSet(DATASET_NAME, datatype, dataSpace);
+
+        dataSet.write(data, PredType::NATIVE_INT);
 
 
 
