@@ -8,6 +8,7 @@ const H5std_string  DATASET_NAME( "IntArray" );
 const int   NX = 6;                    // dataset dimensions
 const int   NY = 5;
 const int   RANK = 2;
+const int   NITER = 40000;
 
 int main() {
 
@@ -24,7 +25,7 @@ int main() {
 
     try {
         Exception::dontPrint();
-        H5File thisFile{FILE_NAME, H5F_ACC_TRUNC};
+        H5File thisFile{FILE_NAME, H5F_ACC_TRUNC}; // Open file
 
         hsize_t dimsf[2];
         hsize_t maxdims[2] = {H5S_UNLIMITED, NY};
@@ -77,22 +78,23 @@ int main() {
 
         /* ==================== NEW PART ============================*/
 
-        // extend the dataset: now it becomes 12 x 5
-        hsize_t dims2[2] = {NX, NY};
-        size[0] = size[0] + dims2[0];
-        size[1] = size[1];
-        dataSet.extend(size);
-        // select the second hyperslab (block)
+        for (auto iter = 0; iter<NITER; ++iter ) {
+            // extend the dataset: now it becomes 12 x 5
+            hsize_t dims2[2] = {NX, NY}; // dimensions of the added block
+            size[0] = size[0] + dims2[0];
+//        size[1] = size[1]; // this will not change
+            dataSet.extend(size);
+            // select the second hyperslab (block)
 
-        DataSpace dataSpace2 = dataSet.getSpace();
-        offset[0] = NX;
-        offset[1] = 0;
-        dataSpace2.selectHyperslab(H5S_SELECT_SET,dims2,offset);
+            DataSpace dataSpace2 = dataSet.getSpace();
+            offset[0] = size[0] - dims2[0];
+            offset[1] = 0;
+            dataSpace2.selectHyperslab(H5S_SELECT_SET, dims2, offset);
 
-        // define memory space
-        DataSpace memSpace2(RANK, dims2);
-        dataSet.write(data, PredType::NATIVE_INT, memSpace2, dataSpace2);
-        
+            // define memory space
+            DataSpace memSpace2(RANK, dims2);
+            dataSet.write(data, PredType::NATIVE_INT, memSpace2, dataSpace2);
+        }
 
     }
     catch (std::exception const& e){
