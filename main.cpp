@@ -1,6 +1,7 @@
 #include <iostream>
 #include <H5Cpp.h>
 
+
 using namespace H5;
 
 const H5std_string  FILE_NAME( "SDS.h5" );
@@ -10,17 +11,31 @@ const int   NY = 5;
 const int   RANK = 2;
 const int   NITER = 40000;
 
+struct ComplexData{
+    double t, x, y, z;
+    int ID;
+
+    void init(double var, int ID){
+    t=var;
+    x=var+1.0;
+    y=var+2.0;
+    z=var-1.0;
+    this->ID=ID;
+    }
+};
+
 int main() {
 
     /*
  * Data initialization.
  */
     int i, j;
-    int data[NX][NY];
+    ComplexData data[NX][NY];
     for (j = 0; j < NX; j++)
     {
-        for (i = 0; i < NY; i++)
-            data[j][i] = i + j;
+        for (i = 0; i < NY; i++) {
+            data[j][i].init(static_cast<double>(i + j),i + NX * j);
+        }
     }
 
     try {
@@ -32,7 +47,12 @@ int main() {
         dimsf[0] = NX;
         dimsf[1] = NY;
 
-
+        CompType myType{sizeof(ComplexData)};
+        myType.insertMember("t", HOFFSET(ComplexData, t), PredType::NATIVE_DOUBLE);
+        myType.insertMember("x", HOFFSET(ComplexData, x), PredType::NATIVE_DOUBLE);
+        myType.insertMember("y", HOFFSET(ComplexData, y), PredType::NATIVE_DOUBLE);
+        myType.insertMember("z", HOFFSET(ComplexData, z), PredType::NATIVE_DOUBLE);
+        myType.insertMember("ID", HOFFSET(ComplexData, ID), PredType::NATIVE_INT);
 
         DataSpace dataSpace{RANK,dimsf, maxdims};
 
@@ -40,16 +60,16 @@ int main() {
         hsize_t chunck_dims[2] = {NX, NY};
         creatParams.setChunk(RANK, chunck_dims);
 
-        int fill_val = 0;
-        creatParams.setFillValue(PredType::NATIVE_INT, &fill_val);
+        ComplexData fill_val = ComplexData();
+        creatParams.setFillValue(myType, &fill_val);
 
 
-        IntType datatype{PredType::NATIVE_INT};
-        datatype.setOrder(H5T_ORDER_LE);
+//        IntType datatype{PredType::NATIVE_INT};
+//        datatype.setOrder(H5T_ORDER_LE);
 
 
 
-        DataSet dataSet = thisFile.createDataSet(DATASET_NAME, datatype, dataSpace, creatParams);
+        DataSet dataSet = thisFile.createDataSet(DATASET_NAME, myType, dataSpace, creatParams);
         /*
          * Extend the dataset. This call assures that dataset is at least 6 x 5.
          */
@@ -72,28 +92,29 @@ int main() {
  * Write the data to the hyperslab.
  */
 
-        dataSet.write(data, PredType::NATIVE_INT, dataSpace, memSpace1);
+        dataSet.write(data, myType, dataSpace, memSpace1);
 
+        if (true) {
 
+            /* ==================== NEW PART ============================*/
 
-        /* ==================== NEW PART ============================*/
-
-        for (auto iter = 0; iter<NITER; ++iter ) {
-            // extend the dataset: now it becomes 12 x 5
-            hsize_t dims2[2] = {NX, NY}; // dimensions of the added block
-            size[0] = size[0] + dims2[0];
+            for (auto iter = 0; iter < NITER; ++iter) {
+                // extend the dataset: now it becomes 12 x 5
+                hsize_t dims2[2] = {NX, NY}; // dimensions of the added block
+                size[0] = size[0] + dims2[0];
 //        size[1] = size[1]; // this will not change
-            dataSet.extend(size);
-            // select the second hyperslab (block)
+                dataSet.extend(size);
+                // select the second hyperslab (block)
 
-            DataSpace dataSpace2 = dataSet.getSpace();
-            offset[0] = size[0] - dims2[0];
-            offset[1] = 0;
-            dataSpace2.selectHyperslab(H5S_SELECT_SET, dims2, offset);
+                DataSpace dataSpace2 = dataSet.getSpace();
+                offset[0] = size[0] - dims2[0];
+                offset[1] = 0;
+                dataSpace2.selectHyperslab(H5S_SELECT_SET, dims2, offset);
 
-            // define memory space
-            DataSpace memSpace2(RANK, dims2);
-            dataSet.write(data, PredType::NATIVE_INT, memSpace2, dataSpace2);
+                // define memory space
+                DataSpace memSpace2(RANK, dims2);
+                dataSet.write(data, myType, memSpace2, dataSpace2);
+            }
         }
 
     }
