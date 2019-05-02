@@ -5,7 +5,7 @@
 using namespace H5;
 
 const H5std_string  FILE_NAME( "SDS.h5" );
-const H5std_string  DATASET_NAME( "IntArray" );
+const H5std_string  DATASET_NAME( "CompoundArray" );
 const int   NX = 6;                    // dataset dimensions
 const int   NY = 5;
 const int   RANK = 2;
