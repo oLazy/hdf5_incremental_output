@@ -1,4 +1,5 @@
 #include <iostream>
+#include <array>
 #include <H5Cpp.h>
 
 
@@ -107,6 +108,7 @@ int main() {
  */
     int i, j;
     ComplexData data[NX][NY];
+//    std::array<std::array<ComplexData,NY>,NX> data;
     for (j = 0; j < NX; j++)
     {
         for (i = 0; i < NY; i++) {
@@ -116,12 +118,18 @@ int main() {
     DataPrinter<ComplexData> printer{FILE_NAME,DATASET_NAME,NX,NY};
 
 
+
     try {
         Exception::dontPrint();
         printer.append(NX, NY, data);
         printer.append(NX, NY, data);
         printer.append(NX, NY, data);
         printer.append(NX, NY, data);
+
+//printer.append(NX, NY, data.data());
+//printer.append(NX, NY, data.data());
+//printer.append(NX, NY, data.data());
+//printer.append(NX, NY, data.data());
 //        H5File thisFile{FILE_NAME, H5F_ACC_TRUNC}; // Open file
 //
 //        hsize_t dimsf[2];
